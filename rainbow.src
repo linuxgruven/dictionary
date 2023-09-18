@@ -1,0 +1,117 @@
+import_code("/home/tux/src/brute/brute1.src")
+import_code("/home/tux/src/brute/brute2.src")
+import_code("/home/tux/src/brute/brute3.src")
+import_code("/home/tux/src/brute/brute4.src")
+import_code("/home/tux/src/brute/brute5.src")
+import_code("/home/tux/src/brute/brute6.src")
+import_code("/home/tux/src/brute/brute7.src")
+CO=@get_custom_object
+CO.rainbow=[]
+PT=@print
+NL=@char(10)
+string.yellow=function
+	return "<color=#e4ff34>"+self+"</color>"
+end function
+string.green=function
+	return "<color=#20ff98>"+self+"</color>"
+end function
+Crack={"isNum":["0","1","2","3","4","5","6","7","8","9"]}
+Crack.dump=function
+  PT "Building the rainbow tables ...".yellow
+  c=get_shell.host_computer
+  p=home_dir+"/rainbow"
+  if not c.File(p) then c.create_folder(home_dir,"rainbow")
+	l=[]
+	l=brute1+brute2+brute3+brute4+brute5+brute6+brute7
+	r=[]
+	a=0
+  c=get_shell.host_computer
+  p=home_dir+"/rainbow"
+  if not c.File(p) then c.create_folder(home_dir,"rainbow")
+	for b in l
+		if self.isNum.indexOf(b[0])!=null then 
+			r.push b+":"+md5(b)
+			continue
+		end if
+		r.push b+":"+md5(b)
+		r.push b.lower+":"+md5(b.lower)
+		if r.len>3792 then
+			c.touch(p,"r"+a)
+			f=c.File(p+"/r"+a).set_content(r.join(NL))
+      r=[]
+      a=a+1
+		end if
+	end for
+	if r.len then
+		f=null
+		c.touch(p,"r"+a)
+		f=c.File(p+"/r"+a)
+		f.set_content(r.join(NL))
+	end if
+  PT "Rainbow tables built.".yellow
+end function
+Crack.load=function
+  PT "initialising dictionary password database".yellow
+  c=get_shell.host_computer
+	z=c.File(home_dir+"/rainbow")
+	if not z then
+		self.dump
+		z=c.File(home_dir+"/rainbow").get_files
+  else
+    z=c.File(home_dir+"/rainbow").get_files
+	end if
+  PT "Expanding rainbow tables...".yellow
+	t=[]
+	for f in z
+		CO.rainbow.push f.get_content.split(NL)
+	end for
+end function
+Crack.hash=function(h)
+	if not CO.rainbow then self.load
+	for p in CO.rainbow
+		for x in p
+			if x.indexOf(h)!=null then return x.split(":").pull
+		end for
+	end for
+	return h
+end function
+Z=params.pull
+Y=params.join("")
+I=null
+C=get_shell.host_computer
+if not Z then
+  f=C.File(user_input("Enter path to the file to crack: "))
+  if user_input("Do you want to save the cracked passwords back to the file? (y/n): ").lower=="y" then I=1
+else
+  f=C.File(Z)
+end if
+if not f then exit("File not found")
+if Y.indexOf("i")!=null then I=1
+if I and not f.has_permission("w") then I=null
+PT "Loading rainbow tables...".yellow
+Crack.load
+PT "Rainbow tables loaded...initiating attack".yellow
+p=[]
+for l in f.get_content.split(NL)
+  u=null
+  h=l.split(":")
+  a=h.pop
+  b=h.pop
+  if a.len==32 then
+    u=Crack.hash(a)
+    if I then
+      if b then p.push b+":"+u else p.push u
+    else
+      if b then PT (b+":".yellow+u).green else PT u.green
+    end if
+  else if b.len==32 then
+    u=Crack.hash(b)
+    if I then
+      if a then p.push a+":"+u else p.push u
+    else
+      if a then PT (a+":".yellow+u).green else PT u.green
+    end if
+  end if
+end for
+if I then f.set_content(p.join(NL))
+PT "Done"
